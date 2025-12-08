@@ -1,3 +1,4 @@
+# 控制系統邏輯，負責從車輛獲取圖像，進行物體檢測，並根據檢測結果控制車輛行駛。
 import sys
 import cv2 as cv
 import numpy as np
@@ -14,6 +15,7 @@ detection_model = load_custom_model(path_or_model=modelPath)
 
 car_speed = INITIAL_SPEED
 
+# 定義駕駛邏輯，根據檢測到的物體調整車速和方向
 def drive(max_priority_obj,last_obj_in_image, obj_size,car_speed):
     """
     Drives the car based on the detected object.
@@ -92,6 +94,7 @@ def detect(img, img_counter, save_detection_img = True):
     # img_handler.print_results(objects_in_img, confidence, modelElapsedTime)
     return objects_in_img
 
+# max_priority_object： 從檢測到的物體列表中返回優先級最高的物體
 def get_max_priority_object(detected_objects : list):
     """
     Returns the object with the highest priority from the list of detected objects.
@@ -129,6 +132,7 @@ def get_max_priority_object(detected_objects : list):
                 max_priority_obj = obj
     return max_priority_obj,size
 
+# 主要運作的function
 def run():
     wait_for_car_server()
     global car_speed
@@ -141,6 +145,7 @@ def run():
             img = fetch_img_from_car()
             # img_handler.save_original_img(img, img_counter, run_ind) # TODO: new thread for saving the images
            
+            #obj_size： 物體的大小（面積）, last_obj_in_image： 上一幀圖像中的物體
             objects_in_img = detect(img ,img_counter ,save_detection_img = True)
             max_priority_obj, obj_size = get_max_priority_object(objects_in_img)
             drive(max_priority_obj,last_obj_in_image,obj_size,car_speed )
