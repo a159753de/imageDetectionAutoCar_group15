@@ -10,7 +10,7 @@
 #include "soc/rtc_cntl_reg.h"  //disable brownout problems
 #include "esp_http_server.h"
 #include "esp_camera.h"
-
+//hahahahaha
 
 const char* ssid = "Yaniv";
 const char* password = "yaniv123";
