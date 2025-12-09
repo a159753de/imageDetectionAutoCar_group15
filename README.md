@@ -1,3 +1,11 @@
+# 系統需求
+## 系統運行
+先在專案資料夾建立python虛擬環境venv
+  py -3.10 -m venv venv
+啟動venv
+  .\venv\Scripts\activate
+安裝所需套件
+  pip install -r .\client\car_AI\requirements.txt
 # 系統邏輯
 ## car_server 
 負責ESP32、相機的控制，並處理：
