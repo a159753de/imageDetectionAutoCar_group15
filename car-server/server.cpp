@@ -244,6 +244,7 @@ static int8_t is_enrolling = 0;
 static face_id_list id_list = {0};
 static ra_filter_t ra_filter;
 
+// 邏輯：持續抓攝影機幀 → 轉 JPEG → 以 MJPEG 標準發送給客戶端 → 客戶端自動更新顯示實時視訊
 static esp_err_t stream_handler(httpd_req_t *req){
     camera_fb_t * fb = NULL;
     esp_err_t res = ESP_OK;
@@ -482,6 +483,7 @@ static esp_err_t cmd_handler(httpd_req_t *req){
 }
 
 void startCameraServer(){
+  // 定義各個URI對應的處理函數
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
   config.server_port = 80;
   httpd_uri_t index_uri = {
@@ -552,6 +554,7 @@ void startCameraServer(){
     };
   ra_filter_init(&ra_filter, 20);
 
+  // 若httpd_start啟動成功，則註冊URI處理函數
   if (httpd_start(&index_httpd, &config) == ESP_OK) {
         // Register URI handlers
         httpd_register_uri_handler(index_httpd, &index_uri); // Assuming index_uri is already defined
@@ -571,6 +574,8 @@ void startCameraServer(){
     config.server_port += 1;
     config.ctrl_port += 1;
     Serial.printf("\nStarting stream server on port: '%d'\n", config.server_port);
+
+    // 若httpd_start啟動成功，則開始串流伺服器並註冊URI處理函數
     if (httpd_start(&stream_httpd, &config) == ESP_OK) {
         httpd_register_uri_handler(stream_httpd, &stream_uri);
     }
