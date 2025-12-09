@@ -1,7 +1,9 @@
 # 系統需求
 ## 系統運行
 先在專案資料夾建立python虛擬環境venv
+<code>
   py -3.10 -m venv venv
+</code>
 啟動venv
   .\venv\Scripts\activate
 安裝所需套件
