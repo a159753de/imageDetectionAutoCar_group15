@@ -1,3 +1,4 @@
+// 標頭檔，實際邏輯寫在server.cpp
 #ifndef SERVER_H
 #define SERVER_H
 #include "fd_forward.h"
