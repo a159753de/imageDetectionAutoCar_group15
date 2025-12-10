@@ -20,11 +20,11 @@ detection_model = load_custom_model(path=modelPath)
 car_speed = INITIAL_SPEED
 
 # RAW565 → RGB888 轉換
-def raw565_to_rgb888(raw: bytes, width: int = 320, height: int = 240) -> np.ndarray:
+def raw565_to_rgb888(raw: bytes, width: int = 160, height: int = 120) -> np.ndarray:
     """
     將 OV7725 的 RGB565 Raw buffer 轉成 OpenCV 可用的 BGR 圖片
     """
-    arr = np.frombuffer(raw, dtype=np.uint16).reshape((height, width))
+    arr = np.frombuffer(raw, dtype=np.uint8).reshape((height, width, 2))
 
     r = ((arr >> 11) & 0x1F) << 3
     g = ((arr >> 5) & 0x3F) << 2
@@ -86,6 +86,7 @@ def fetch_img_from_car():
 
         # 2. RAW565 → BGR 圖片
         decode_start = time.time()
+        print("====================================")
         img = raw565_to_rgb888(img_data, width=320, height=240)
         decode_time = time.time() - decode_start
         print(f"{ANSI_COLOR_GREEN}Time to decode RAW565: {decode_time:.4f} seconds{ANSI_COLOR_RESET}")
