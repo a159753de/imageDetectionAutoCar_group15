@@ -1,4 +1,4 @@
-
+# 設定遇到標誌時的反應行為
 from remote_control import*
 from constants import *
 
