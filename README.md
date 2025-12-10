@@ -1,18 +1,27 @@
 # 系統需求
-## 系統運行
-先在專案資料夾建立python虛擬環境venv
+1. python3.10(超過無法使用YOLOv5)
+# 系統運行
+1. 先在專案資料夾建立python虛擬環境venv
 ```
 py -3.10 -m venv venv
 ```
-
-啟動venv
+2. 啟動venv
 ```
 .\venv\Scripts\activate
 ```
-安裝所需套件
+3. 安裝所需套件
 ```
 pip install -r .\client\car_AI\requirements.txt
 ```
+4. 啟動前端與偵測程式
+```
+py .\client\main.py
+```
+或是分別啟動也可以
+```
+
+```
+如果執行後找不到套件，就再用pip單獨安裝套件
 # 系統邏輯
 ## car_server 
 負責ESP32、相機的控制，並處理：
