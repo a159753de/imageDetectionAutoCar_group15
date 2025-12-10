@@ -28,6 +28,7 @@ py .\client\main.py
 1. 將讀取到的圖片傳給client
 2. 啟動server，接收http request後執行對應的行為
 ### 實際運作流程
+
 setup()：
 
 初始化 Serial
@@ -41,6 +42,7 @@ esp_camera_init(&config);
 連 Wi-Fi
 
 startCameraServer();
+
 
 loop()：
 
