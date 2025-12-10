@@ -74,6 +74,7 @@ loop()：
 負責主要的邏輯判斷，接收image後根據偵測到的標示來判斷需要做的行為，如暫停、減速等，再將判斷後的結果透過HTTP回傳ESP32
 
 ai_driver.py — 主流程（Main Loop）
+---
 
 用途：
 
@@ -90,8 +91,9 @@ ai_driver.py — 主流程（Main Loop）
 輸入：車子傳回的影像
 
 輸出：對車子的控制（HTTP）
----
+
 remote_control.py — 車子控制（HTTP API）
+---
 
 用途：
 
@@ -100,8 +102,9 @@ remote_control.py — 車子控制（HTTP API）
 使用 urllib or requests 呼叫你的 /forward /capture /stop 等 URI
 
 透過 CAPTURE_URI 取得影像
----
+
 image_data_handler.py — 圖像處理
+---
 
 用途：
 
@@ -110,16 +113,18 @@ ROI 擷取
 YOLO 偵測後畫框 / 標記
 
 儲存圖片
----
+
 obj_handlers.py — 路牌行為邏輯
+---
 
 用途：
 
 停止、減速、變速、轉彎的邏輯
 
 呼叫 remote_control.py 內的控制函式
----
+
 constants.py — 存放 URI 與常用常數
+---
 
 用途：
 
