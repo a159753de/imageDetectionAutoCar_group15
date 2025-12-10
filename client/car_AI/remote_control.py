@@ -31,7 +31,10 @@ def set_resolution(resolution_index: int = 1, show_resolution_options: bool = Fa
         print("An error occurred while trying to set the resolution.")
     except Exception as e:
         print(f"An unexpected error occurred: {e}")
-        
+
+################
+# 車輛動作邏輯
+################    
 def move_forward():
     try:
         urllib.request.urlopen(FORWARD_URI,timeout=2)
@@ -44,58 +47,71 @@ def move_backward():
     except urllib.error.URLError as e:
         print(f"URLError occurred while sending the 'go back' command:\n {e}")
 
+def turn(direction: str = "right", turn_duration: float = 0.2):
+    """
+    direction: "right" or "left"
+    turn_duration: 轉彎多久(秒)，轉完會自動 stop()
+    """
+    try:
+        if direction == "right":
+            urllib.request.urlopen(RIGHT_URI, timeout=2)
+        else:
+            urllib.request.urlopen(LEFT_URI, timeout=2)
+    except Exception as e:
+        print(f"[ERROR] turn({direction}) failed: {e}")
+        return
+
+    time.sleep(turn_duration)
+    stop()
+
 def stop():
     try:
         urllib.request.urlopen(f"{STOP_URI}", timeout=2)
     except urllib.error.URLError as e:
         print(f"URL error occurred while stopping the car:\n {e}")
- 
+
+################
+# 速度控制
+################  
 def set_speed(speed):
+    """
+    speed: 0~100
+    ESP32 端的 /set_speed handler 是用 ?value=xxx
+    """
     if speed < 30 or speed > 100:
-        raise ValueError("Speed value must be in the range 30 to 100. or 0 to stop the car")
+        print(f"[WARN] set_speed({speed}) out of range (0~100)")
+        return
+    
     try:
-        urllib.request.urlopen(f"{SET_SPEED_URI}?Speed={speed}" ,timeout=2)
+        urllib.request.urlopen(f"{SET_SPEED_URI}?value={speed}" ,timeout=2)
         print(f"set car speed to {speed} successfully")
-    except urllib.error.URLError as e:
-        print(f"URLError occurred while setting the speed to {speed}: {e}")
     except Exception as e:
      print(f"An unexpected error occurred while setting the speed to {speed} {e}\n")
 
-
+#################
+# 影像擷取 RAW565
+#################
 def capture_img():
+    """
+    從 ESP32 的 /capture 取得一張影像 (RGB565 Raw buffer)
+    回傳: bytes（長度 = width * height * 2）
+    """
     try:
-        response = urllib.request.urlopen(CAPTURE_URI,timeout=5)
-        return response
+        resp = urllib.request.urlopen(CAPTURE_URI,timeout=5)
+        data = resp.read()
+        return data
     except Exception as e:
-        raise Exception(f"An unexpected error occurred while capturing image: {e}\n")
+        print(f"[ERROR] capture_img failed: {e}")
+        return b""
 
 
-
+# 檢查esp32 server是否可用
 def server_available():
     """
-    Check if the car esp32 server is available.
-
-    Sends a request to the car server to check its availability.
-
-    Returns:
-        bool: True if the car server is available, False otherwise.
+    簡單 ping 一下 ESP32 是否可連線
     """
     try:
         urllib.request.urlopen(CAR_ESP_32_URI,timeout=3)
         return True
     except Exception as e:
         return False
-
-
-def lights(turn_on):
-    #the car server need to implement this uri
-    if turn_on:
-        try:
-            urllib.request.urlopen(f"{LIGHTS_URI}?On={True}", timeout=2)
-        except urllib.error.URLError as e:
-            print(f"URLError occurred while turning the lights on: {e}")
-    else:
-        try:
-            urllib.request.urlopen(f"{LIGHTS_URI}?On={False}", timeout=2)
-        except urllib.error.URLError as e:
-            print(f"URLError occurred while turning the lights off: {e}")

@@ -4,7 +4,6 @@
 # 2. 使用訓練好的物體檢測模型檢測圖像中的物體。
 # 3. 根據檢測到的物體調整車輛的速度和方向。
 
-import sys
 import cv2 as cv
 import numpy as np
 import time
@@ -16,16 +15,30 @@ from obj_handlers import *
 
 # 載入預訓練模型
 modelPath = "client/car_AI/weights/best_93.pt"
-# modelPath = "client/car_AI/weights/yolov7tiny_RoboWheel_v20.pt"
-# detection_model = load_custom_model(path_or_model=modelPath)
 detection_model = load_custom_model(path=modelPath)
 
 car_speed = INITIAL_SPEED
 
+# RAW565 → RGB888 轉換
+def raw565_to_rgb888(raw: bytes, width: int = 320, height: int = 240) -> np.ndarray:
+    """
+    將 OV7725 的 RGB565 Raw buffer 轉成 OpenCV 可用的 BGR 圖片
+    """
+    arr = np.frombuffer(raw, dtype=np.uint16).reshape((height, width))
+
+    r = ((arr >> 11) & 0x1F) << 3
+    g = ((arr >> 5) & 0x3F) << 2
+    b = (arr & 0x1F) << 3
+
+    # OpenCV 用 BGR
+    bgr = np.stack([b, g, r], axis=-1).astype(np.uint8)
+    return bgr
+
 # 定義駕駛邏輯，根據檢測到的物體調整車速和方向
 def drive(max_priority_obj,last_obj_in_image, obj_size,car_speed):
     """
-    Drives the car based on the detected object.
+    根據當前最高優先物件，決定車子的行為 & 更新 car_speed
+    回傳：更新後的 car_speed
     """
     if max_priority_obj == PEDESTRIAN:
         car_speed = pedestrian_handler(obj_size, car_speed)
@@ -41,7 +54,10 @@ def drive(max_priority_obj,last_obj_in_image, obj_size,car_speed):
         car_speed = speed_limit_handler(SPEED_LIMIT_100_SIGN)
     else:
         car.move_forward()
+    
+    return car_speed
 
+# 等待car的server可用
 def wait_for_car_server():
     """
     Wait until the server is available.
@@ -51,31 +67,32 @@ def wait_for_car_server():
         time.sleep(2)
     
 def fetch_img_from_car():
+    """
+    從車子抓一張 RAW565 影像，轉成 BGR 圖片
+    """
     fetch_start_time = time.time()
 
     try:
-        # Capture the image from the car
+        # 1. 從車抓 raw bytes
         capture_start_time = time.time()
-        img_response = car.capture_img()
+        img_data = car.capture_img()   # 已經是 bytes，不用再 .read()
         capture_time = time.time() - capture_start_time
         print(f"{ANSI_COLOR_GREEN}Time to capture image: {capture_time:.4f} seconds{ANSI_COLOR_RESET}")
 
-        # Read the image data from the response
-        read_start_time = time.time()
-        img_data = img_response.read()
+        if not img_data:
+            raise RuntimeError("Empty image data from car")
+
         print(f"{ANSI_COLOR_GREEN}data size: {len(img_data)} bytes {ANSI_COLOR_RESET}")
-        read_time = time.time() - read_start_time
-        print(f"{ANSI_COLOR_GREEN}Time to read image data: {read_time:.4f} seconds{ANSI_COLOR_RESET}")
 
-        # Convert the image data into a NumPy array for further processing
-        img_np = np.array(bytearray(img_data), dtype=np.uint8)
-       
-        # Decode the NumPy array to obtain the actual image
-        img = cv.imdecode(img_np, -1)
+        # 2. RAW565 → BGR 圖片
+        decode_start = time.time()
+        img = raw565_to_rgb888(img_data, width=320, height=240)
+        decode_time = time.time() - decode_start
+        print(f"{ANSI_COLOR_GREEN}Time to decode RAW565: {decode_time:.4f} seconds{ANSI_COLOR_RESET}")
 
-        # Rotate the image 90 degrees clockwise
-        img = cv.rotate(img, cv.ROTATE_90_CLOCKWISE)
-        
+        # 3. 如果你真的需要旋轉再打開（先關掉比較容易 debug）
+        # img = cv.rotate(img, cv.ROTATE_90_CLOCKWISE)
+
         total_time = time.time() - fetch_start_time
         print(f"\n{ANSI_COLOR_GREEN}Total time for image fetching and processing: {total_time:.4f} seconds{ANSI_COLOR_RESET}\n")
 
@@ -145,28 +162,32 @@ def run():
     global car_speed
     last_obj_in_image = "none"
     img_counter = 0
-    car.set_speed(INITIAL_SPEED)
+    car_speed = INITIAL_SPEED
+    car.set_speed(car_speed)
+
     while True:
         start_time = time.time()
         try:
             img = fetch_img_from_car()
-            # img_handler.save_original_img(img, img_counter, run_ind) # TODO: new thread for saving the images
-           
-            #obj_size： 物體的大小（面積）, last_obj_in_image： 上一幀圖像中的物體
-            objects_in_img = detect(img ,img_counter ,save_detection_img = True)
-            max_priority_obj, obj_size = get_max_priority_object(objects_in_img)
-            drive(max_priority_obj,last_obj_in_image,obj_size,car_speed )
+            # img_handler.save_original_img(img, img_counter, run_ind)  # 如果你需要存原圖
 
-            last_obj_in_image = last_obj_in_image if max_priority_obj == "none" else max_priority_obj
+            objects_in_img = detect(img, img_counter, save_detection_img=True)
+            max_priority_obj, obj_size = get_max_priority_object(objects_in_img)
+
+            car_speed = drive(max_priority_obj, last_obj_in_image, obj_size, car_speed)
+
+            if max_priority_obj is not None:
+                last_obj_in_image = max_priority_obj
 
             img_counter += 1
+
         except Exception as e:
             print(f"An unexpected error occurred: {e}\n")
-        
+
         finally:
             elapsed_time = time.time() - start_time
-            print(f"elapsed_time = {elapsed_time}")
-  
+            print(f"elapsed_time = {elapsed_time:.4f}s")
+
 if __name__ == '__main__':
     # Initialize a new directory to store images (both original and detection) for the current execution run.
     run_ind = img_handler.create_run_folder_for_images()
