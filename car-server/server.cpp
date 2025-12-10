@@ -175,7 +175,7 @@ static esp_err_t set_speed_handler(httpd_req_t *req) {
 
     // 取得整個 query string
     if (httpd_req_get_url_query_str(req, buf, sizeof(buf)) != ESP_OK) {
-        httpd_resp_send_400(req);
+        httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Bad Request");
         return ESP_FAIL;
     }
 
@@ -189,7 +189,7 @@ static esp_err_t set_speed_handler(httpd_req_t *req) {
         }
     }
 
-    httpd_resp_send_400(req);
+    httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Bad Request");
     return ESP_FAIL;
 }
 
@@ -336,22 +336,6 @@ void startCameraServer() {
         .handler   = cmd_handler,
         .user_ctx  = NULL
     };
-
-    // ====== 啟動 Web Server ======
-    if (httpd_start(&index_httpd, &config) == ESP_OK) {
-        httpd_register_uri_handler(index_httpd, &index_uri);
-        httpd_register_uri_handler(index_httpd, &capture_uri);
-        httpd_register_uri_handler(index_httpd, &forward_uri);
-        httpd_register_uri_handler(index_httpd, &backward_uri);
-        httpd_register_uri_handler(index_httpd, &left_uri);
-        httpd_register_uri_handler(index_httpd, &right_uri);
-        httpd_register_uri_handler(index_httpd, &stop_uri);
-        httpd_register_uri_handler(index_httpd, &speed_uri);
-        httpd_register_uri_handler(index_httpd, &cmd_uri);
-    }
-
-    // ====== 啟動 RAW Stream Server 在 port 81 ======
-    config.server_port = 81;
     httpd_uri_t stream_uri = {
         .uri       = "/stream",
         .method    = HTTP_GET,
@@ -359,9 +343,22 @@ void startCameraServer() {
         .user_ctx  = NULL
     };
 
-    Serial.printf("Starting stream server on port: %d\n", config.server_port);
+    // ====== 啟動 Web Server ======
+    if (httpd_start(&index_httpd, &config) == ESP_OK) {
 
-    if (httpd_start(&stream_httpd, &config) == ESP_OK) {
-        httpd_register_uri_handler(stream_httpd, &stream_uri);
+        httpd_register_uri_handler(index_httpd, &index_uri);
+        httpd_register_uri_handler(index_httpd, &capture_uri);
+        httpd_register_uri_handler(index_httpd, &speed_uri);
+        httpd_register_uri_handler(index_httpd, &right_uri);
+        httpd_register_uri_handler(index_httpd, &left_uri);
+        httpd_register_uri_handler(index_httpd, &forward_uri);
+        httpd_register_uri_handler(index_httpd, &backward_uri);
+        httpd_register_uri_handler(index_httpd, &stop_uri);
+        httpd_register_uri_handler(index_httpd, &cmd_uri);
+
+        // ⭐⭐ 重點：直接把 stream 註冊在同一個 server
+        httpd_register_uri_handler(index_httpd, &stream_uri);
+
+        Serial.printf("HTTP server started on port 80\n");
     }
 }
