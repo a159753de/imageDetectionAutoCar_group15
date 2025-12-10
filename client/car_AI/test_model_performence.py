@@ -11,13 +11,11 @@ from obj_handlers import *
 import os
 
 LABELS = {STOP_SIGN:0, SPEED_LIMIT_50_SIGN:1, PEDESTRIAN:2, KEEP_RIGHT:3, CROSSWALK_SIGN:4, SPEED_LIMIT_100_SIGN:5}
-# Load model
-# model_to_test = "car_AI/yolov7_RoboWheel_v7.pt"
 
-# so far the best models: 
-# v14 75.37% accuracy, 394 miliseconds per image
-# v20 82.84% accuracy, 355 miliseconds per image
-model_to_test = "car_AI/weights/yolov7tiny_RoboWheel_v20.pt"
+# 載入model
+model_to_test = "car_AI/weights/best_93.pt"
+# model_to_test = "car_AI/weights/yolov7tiny_RoboWheel_v20.pt"
+
 
 detection_model = load_custom_model(path_or_model=model_to_test)
 

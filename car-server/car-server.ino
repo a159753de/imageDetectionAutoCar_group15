@@ -12,8 +12,8 @@
 #include "esp_camera.h"
 //hahahahaha
 
-const char* ssid = "Yaniv";
-const char* password = "yaniv123";
+const char* ssid = "ESP32S3";
+const char* password = "1234";
 
 // This project was tested with the AI Thinker Model, M5STACK PSRAM Model and M5STACK WITHOUT PSRAM
 #define CAMERA_MODEL_AI_THINKER

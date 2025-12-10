@@ -14,9 +14,11 @@ from hubconf import custom as load_custom_model
 from constants import *
 from obj_handlers import *
 
-# Load trained model
-modelPath = "car_AI/weights/yolov7tiny_RoboWheel_v20.pt"
-detection_model = load_custom_model(path_or_model=modelPath)
+# 載入預訓練模型
+modelPath = "client/car_AI/weights/best_93.pt"
+# modelPath = "client/car_AI/weights/yolov7tiny_RoboWheel_v20.pt"
+# detection_model = load_custom_model(path_or_model=modelPath)
+detection_model = load_custom_model(path=modelPath)
 
 car_speed = INITIAL_SPEED
 
