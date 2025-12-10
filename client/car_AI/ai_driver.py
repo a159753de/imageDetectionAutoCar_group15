@@ -12,26 +12,37 @@ import image_data_handler as img_handler
 from hubconf import custom as load_custom_model
 from constants import *
 from obj_handlers import *
+import torch
 
 # 載入預訓練模型
 modelPath = "client/car_AI/weights/best_93.pt"
-detection_model = load_custom_model(path=modelPath)
+# detection_model = load_custom_model(path=modelPath)
+detection_model = torch.hub.load(
+    'ultralytics/yolov5',
+    'custom',
+    path=modelPath,
+)
 
 car_speed = INITIAL_SPEED
 
 # RAW565 → RGB888 轉換
-def raw565_to_rgb888(raw: bytes, width: int = 160, height: int = 120) -> np.ndarray:
-    """
-    將 OV7725 的 RGB565 Raw buffer 轉成 OpenCV 可用的 BGR 圖片
-    """
-    arr = np.frombuffer(raw, dtype=np.uint8).reshape((height, width, 2))
+def raw565_to_rgb888(raw: bytes, width=160, height=120):
+    # 先確認長度
+    expected = width * height * 2
+    if len(raw) != expected:
+        raise ValueError(f"Raw data size mismatch! got {len(raw)}, expected {expected}")
 
+    # 小端序讀取 RGB565
+    # arr = np.frombuffer(raw, dtype=">u2").reshape((height, width))
+    arr = np.frombuffer(raw, dtype="<u2").byteswap().reshape((height, width))
+
+    # RGB565 breakup
     r = ((arr >> 11) & 0x1F) << 3
     g = ((arr >> 5) & 0x3F) << 2
     b = (arr & 0x1F) << 3
 
-    # OpenCV 用 BGR
-    bgr = np.stack([b, g, r], axis=-1).astype(np.uint8)
+    # 組成 BGR 給 OpenCV
+    bgr = np.dstack((b, g, r)).astype(np.uint8)
     return bgr
 
 # 定義駕駛邏輯，根據檢測到的物體調整車速和方向
@@ -86,7 +97,6 @@ def fetch_img_from_car():
 
         # 2. RAW565 → BGR 圖片
         decode_start = time.time()
-        print("====================================")
         img = raw565_to_rgb888(img_data, width=320, height=240)
         decode_time = time.time() - decode_start
         print(f"{ANSI_COLOR_GREEN}Time to decode RAW565: {decode_time:.4f} seconds{ANSI_COLOR_RESET}")
@@ -101,10 +111,24 @@ def fetch_img_from_car():
 
     except Exception as e:
         raise Exception(f"{ANSI_COLOR_RED}Error fetching or processing image: {e}{ANSI_COLOR_RESET}")
+
+def prepare_for_yolo(img):
+    # img: BGR uint8
+    img = cv.resize(img, (640, 640))        # YOLOv5 default input size
+    img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+    img = img.astype(np.float32) / 255.0
+    img = np.transpose(img, (2, 0, 1))      # CHW
+    img = np.ascontiguousarray(img)
+    tensor = torch.from_numpy(img).unsqueeze(0)  # (1,3,640,640)
+    return tensor
         
 def detect(img, img_counter, save_detection_img = True):
     img = img_handler.roi(img)
+    
+    # === 前處理 ===
+    # input_tensor = prepare_for_yolo(img)
     rgb_img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
+    # input_tensor = torch.from_numpy(rgb_img).permute(2,0,1).float().unsqueeze(0)
     # Run the object detection model
     model_start_time = time.time()
     modelResults = detection_model(rgb_img) 

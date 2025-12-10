@@ -34,6 +34,14 @@ const char* password = "hcilab@307";
 #define HREF_GPIO_NUM  36
 #define PCLK_GPIO_NUM  37
 
+// 馬達腳位
+#define PIN_IN1  7 
+#define PIN_IN2  8 
+#define PIN_ENA  14 
+
+#define PIN_IN3  9 
+#define PIN_IN4  10 
+#define PIN_ENB  15
 
 
 void setup() {
@@ -41,16 +49,18 @@ void setup() {
  
   Serial.begin(115200);
   Serial.setDebugOutput(false);
-  pinMode(gpLb, OUTPUT); //Left Backward
-  pinMode(gpLf, OUTPUT); //Left Forward
-  pinMode(gpRb, OUTPUT); //Right Forward
-  pinMode(gpRf, OUTPUT); //Right Backward
+  pinMode(PIN_IN1, OUTPUT);
+  pinMode(PIN_IN2, OUTPUT);
+  pinMode(PIN_ENA, OUTPUT);
+  pinMode(PIN_IN3, OUTPUT);
+  pinMode(PIN_IN4, OUTPUT);
+  pinMode(PIN_ENB, OUTPUT);
 
-
-  digitalWrite(gpLb, LOW);
-  digitalWrite(gpLf, LOW);
-  digitalWrite(gpRb, LOW);
-  digitalWrite(gpRf, LOW);
+  // 初始化，輪胎不動
+  digitalWrite(PIN_IN1, LOW);
+  digitalWrite(PIN_IN2, LOW);
+  digitalWrite(PIN_IN3, LOW);
+  digitalWrite(PIN_IN4, LOW);
 
   // OV7725 參數
   camera_config_t config;
@@ -81,7 +91,7 @@ void setup() {
   config.xclk_freq_hz = 20000000;
 
   config.pixel_format = PIXFORMAT_RGB565;
-  config.frame_size = FRAMESIZE_QQVGA;   // 160x120 → 無 PSRAM 最穩
+  config.frame_size = FRAMESIZE_QVGA;   // 320×240 → 無 PSRAM 最穩
   config.fb_count = 1;
   config.fb_location = CAMERA_FB_IN_DRAM;
   
@@ -90,6 +100,18 @@ void setup() {
   if (err != ESP_OK) {
     Serial.printf("Camera init failed with error 0x%x", err);
     return;
+  }
+
+  sensor_t *s = esp_camera_sensor_get();
+  if (s) {
+    s->set_brightness(s, 1);   // 稍微變亮
+    s->set_contrast(s, 2);     // 增加對比
+    s->set_saturation(s, -1);  // OV7725 顏色偏重，降低會更自然
+    s->set_whitebal(s, 1);     // 開啟自動白平衡
+    s->set_gainceiling(s, GAINCEILING_32X);
+    s->set_awb_gain(s, 1);
+    s->set_aec2(s, 1);         // improve exposure
+    s->set_raw_gma(s, 1);      // gamma correction
   }
   
   // Wi-Fi connection
@@ -108,11 +130,21 @@ void setup() {
   startCameraServer();
 }
 
-void WheelAct(int nLf, int nLb, int nRf, int nRb){
- digitalWrite(gpLf, nLf);
- digitalWrite(gpLb, nLb);
- digitalWrite(gpRf, nRf);
- digitalWrite(gpRb, nRb);
+#define PIN_IN1  7 
+#define PIN_IN2  8 
+#define PIN_ENA  14 
+
+#define PIN_IN3  9 
+#define PIN_IN4  10 
+#define PIN_ENB  15
+
+void WheelAct(int IN1, int IN2, int ENA, int IN3, int IN4, int ENB){
+  digitalWrite(PIN_IN1, IN1);
+  digitalWrite(PIN_IN2, IN2);
+  analogWrite(PIN_ENA, ENA);
+  digitalWrite(PIN_IN3, IN3);
+  digitalWrite(PIN_IN4, IN4);
+  analogWrite(PIN_ENB, ENB);
 }
 
 const int cycle = 10;
@@ -123,34 +155,34 @@ void loop() {
   // Serial.println("speed = " + String(carSpeed) + " direction is " + String(carDirection));
   switch (carDirection) {
     case FORWARD:
-      WheelAct(HIGH, LOW, HIGH, LOW);
+      WheelAct(LOW ,HIGH , 200, HIGH, LOW, 200);
       break;
 
-    case BACKWARD:
-      WheelAct(LOW, HIGH, LOW, HIGH);
-      break;
+    // case BACKWARD:
+    //   WheelAct(LOW, HIGH, 30, LOW, HIGH, 30);
+    //   break;
     
-    case LEFT:
-      lastSpeed = carSpeed;
-      carSpeed = TURN_SPEED;
-      WheelAct(HIGH, LOW, HIGH, HIGH);
-      carSpeed = lastSpeed;
-      break;
+    // case LEFT:
+    //   lastSpeed = carSpeed;
+    //   carSpeed = TURN_SPEED;
+    //   WheelAct(HIGH, LOW, HIGH, HIGH);
+    //   carSpeed = lastSpeed;
+    //   break;
       
-    case RIGHT:
-      lastSpeed = carSpeed;
-      carSpeed = TURN_SPEED;
-      WheelAct(HIGH, HIGH, HIGH, LOW);
-      carSpeed = lastSpeed;
-      // Right turn logic
-      break;
+    // case RIGHT:
+    //   lastSpeed = carSpeed;
+    //   carSpeed = TURN_SPEED;
+    //   WheelAct(HIGH, HIGH, HIGH, LOW);
+    //   carSpeed = lastSpeed;
+    //   // Right turn logic
+    //   break;
       
     default:
       // Stop the car
-      WheelAct(LOW, LOW, LOW, LOW);
+      WheelAct(LOW, LOW, 0, LOW, LOW, 0);
       break;
   }
   delay(parton);
-  WheelAct(LOW, LOW, LOW, LOW);
+  WheelAct(LOW, LOW, 0, LOW, LOW, 0);
   delay(cycle - parton);
 }
