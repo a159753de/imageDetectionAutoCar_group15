@@ -29,25 +29,38 @@ py .\client\main.py
 2. 啟動server，接收http request後執行對應的行為
 ### 實際運作流程
 setup()：
+
 初始化 Serial
+
 設定腳位（馬達 / LED）
+
 配好 camera_config_t
+
 esp_camera_init(&config);
+
 連 Wi-Fi
+
 startCameraServer();
 
 loop()：
 
 看 carDirection / carSpeed 控制馬達
+
 從電腦 / 筆電端：
+
 抓單張圖：http://<ESP32_IP>/capture → RAW RGB565
+
 串流：http://<ESP32_IP>:81/stream → multipart raw
 
 控車：
 /forward
+
 /backward
+
 /left
+
 /right
+
 /stop
 
 設定速度：/set_speed?value=50
