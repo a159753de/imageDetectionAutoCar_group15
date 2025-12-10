@@ -1,7 +1,7 @@
 import os
-import csv
 import cv2
-import constants 
+import constants
+import numpy as np
 
 def get_image_with_detections(img,classesInImg, bboxes, colors, confidence):
     """
@@ -149,3 +149,14 @@ def create_run_folder_for_images():
 def update_run_index(run_index):
     with open(constants.RUN_INDEX_PATH_FILE, 'w') as file:
         file.write(str(run_index))
+
+# RAW565 → RGB888 轉換
+def raw565_to_rgb888(raw, width=320, height=240):
+    arr = np.frombuffer(raw, dtype=np.uint16).reshape(height, width)
+
+    r = ((arr >> 11) & 0x1F) << 3
+    g = ((arr >> 5) & 0x3F) << 2
+    b = (arr & 0x1F) << 3
+
+    rgb = np.stack([b, g, r], axis=-1).astype(np.uint8)
+    return rgb

@@ -5,6 +5,7 @@ from constants import *
 def pedestrian_handler(pedestrian_size, car_speed):   
     stop()
     set_speed(INITIAL_SPEED)
+    return INITIAL_SPEED
 
 def stop_sign_handler(stop_sign_size,car_speed, sleep_time = 4):
     """
