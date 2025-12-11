@@ -53,21 +53,21 @@ py .\client\car_AI\ai_driver.py
 
   從電腦 / 筆電端：
 
-  抓單張圖：http://<ESP32_IP>/capture → RAW RGB565
+    抓單張圖：http://<ESP32_IP>/capture → RAW RGB565
 
-  串流：http://<ESP32_IP>:81/stream → multipart raw
+    串流：http://<ESP32_IP>:81/stream → multipart raw
 
 * 控車：
   
-  /forward
+    /forward
 
-  /backward
+    /backward
 
-  /left
+    /left
 
-  /right
+    /right
 
-  /stop
+    /stop
 
 * 設定速度：/set_speed?value=50
 
