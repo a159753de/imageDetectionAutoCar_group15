@@ -139,3 +139,10 @@ constants.py — 存放 URI 與常用常數
   供 remote_control.py / ai_driver.py 使用
 
 ### web_app動web server，可實時觀看偵測結果
+
+# TODO
+1. 車子可以行動 ✔️
+2. 相機可以運作 ✔️
+3. 調整相機顏色
+4. YOLOv5 成功判斷
+5. 車輛根據判斷結果進行運動
