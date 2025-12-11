@@ -55,7 +55,7 @@ py .\client\car_AI\ai_driver.py
 
     抓單張圖：http://<ESP32_IP>/capture → RAW RGB565
 
-    串流：http://<ESP32_IP>:81/stream → multipart raw
+    串流：http://<ESP32_IP>/stream → multipart raw
 
 * 控車：
   
