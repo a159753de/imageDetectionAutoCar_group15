@@ -13,61 +13,64 @@ py -3.10 -m venv venv
 ```
 pip install -r .\client\car_AI\requirements.txt
 ```
-4. 啟動前端與偵測程式
+4. 啟動畫面前端與偵測程式
 ```
 py .\client\main.py
 ```
 或是分別啟動也可以
 ```
-
+// 啟動畫面前端
+py  .\client\web_app\app.py
+// 啟動偵測程式
+py .\client\car_AI\ai_driver.py
 ```
 如果執行後找不到套件，就再用pip單獨安裝套件
-# 系統邏輯
+# 系統邏輯介紹
 ## car_server 
-負責ESP32、相機的控制，並處理：
-1. 將讀取到的圖片傳給client
-2. 啟動server，接收http request後執行對應的行為
-### 實際運作流程
+* 負責ESP32、相機的控制，並處理：
+  1. 將讀取到的圖片傳給client
+  2. 啟動server，接收http request後執行對應的行為
+  ### 實際運作流程
 
-setup()：
+  * setup()：
 
-初始化 Serial
+    初始化 Serial
 
-設定腳位（馬達 / LED）
+    設定腳位（馬達 / LED）
 
-配好 camera_config_t
+    配好 camera_config_t
 
-esp_camera_init(&config);
+    esp_camera_init(&config);
 
-連 Wi-Fi
+    連 Wi-Fi
 
-startCameraServer();
+    startCameraServer();
 
 
-loop()：
+  * loop()：
 
-看 carDirection / carSpeed 控制馬達
+    看 carDirection / carSpeed 控制馬達
 
-從電腦 / 筆電端：
+    從電腦 / 筆電端：
 
-抓單張圖：http://<ESP32_IP>/capture → RAW RGB565
+    抓單張圖：http://<ESP32_IP>/capture → RAW RGB565
 
-串流：http://<ESP32_IP>:81/stream → multipart raw
+    串流：http://<ESP32_IP>:81/stream → multipart raw
 
-控車：
-/forward
+  * 控車：
+    /forward
 
-/backward
+    /backward
 
-/left
+    /left
 
-/right
+    /right
 
-/stop
+    /stop
 
-設定速度：/set_speed?value=50
+  * 設定速度：/set_speed?value=50
 
-調相機參數：/control?var=brightness&val=1
+  * 調相機參數：/control?var=brightness&val=1
 
 ## client
 ### car_AI
