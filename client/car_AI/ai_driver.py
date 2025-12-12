@@ -11,12 +11,10 @@ import remote_control as car
 import image_data_handler as img_handler
 from hubconf import custom as load_custom_model
 from constants import *
-from obj_handlers import *
 import torch
 
 # 載入預訓練模型
 modelPath = "client/car_AI/weights/best_93.pt"
-# detection_model = load_custom_model(path=modelPath)
 detection_model = torch.hub.load(
     'ultralytics/yolov5',
     'custom',
@@ -31,18 +29,17 @@ def drive(max_priority_obj,last_obj_in_image, obj_size,car_speed):
     根據當前最高優先物件，決定車子的行為 & 更新 car_speed
     回傳：更新後的 car_speed
     """
-    if max_priority_obj == PEDESTRIAN:
-        car_speed = pedestrian_handler(obj_size, car_speed)
-    elif max_priority_obj == STOP_SIGN and last_obj_in_image != STOP_SIGN:
-        car_speed = stop_sign_handler(obj_size, car_speed, sleep_time=3)
-    elif max_priority_obj == CROSSWALK_SIGN:
-        car_speed =  crosswalk_handler(obj_size, car_speed)
-    elif max_priority_obj == KEEP_RIGHT:
-        car.turn(direction="right", turn_duration=10)
-    elif max_priority_obj == SPEED_LIMIT_50_SIGN:
-        car_speed = speed_limit_handler(SPEED_LIMIT_50_SIGN)
-    elif max_priority_obj == SPEED_LIMIT_100_SIGN:
-        car_speed = speed_limit_handler(SPEED_LIMIT_100_SIGN)
+    if max_priority_obj == STOP_SIGN and last_obj_in_image != STOP_SIGN:
+        car.stop()
+        time.sleep(3)  # 停3秒
+        car.move_forward()
+        car_speed = INITIAL_SPEED
+    elif max_priority_obj == SPEED_LIMIT_30_SIGN:
+        car.speed_limit_30()
+        car_speed = LIMIT_30_SPEED
+    elif max_priority_obj == SPEED_LIMIT_120_SIGN:
+        car.speed_limit_120()
+        car_speed = LIMIT_120_SPEED
     else:
         car.move_forward()
     
@@ -75,33 +72,15 @@ def fetch_img_from_car():
     except Exception as e:
         raise Exception(f"Error fetching image: {e}")
 
-
-def prepare_for_yolo(img):
-    # img: BGR uint8
-    img = cv.resize(img, (640, 640))        # YOLOv5 default input size
-    img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
-    img = img.astype(np.float32) / 255.0
-    img = np.transpose(img, (2, 0, 1))      # CHW
-    img = np.ascontiguousarray(img)
-    tensor = torch.from_numpy(img).unsqueeze(0)  # (1,3,640,640)
-    return tensor
-        
 def detect(img, img_counter, save_detection_img = True):
     img = img_handler.roi(img)
     
     # === 前處理 ===
     rgb_img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
-    model_start_time = time.time()
     modelResults = detection_model(rgb_img) # 這裡給出YOLO判斷結果
-    print(f"model results: {modelResults}")
     
-    print("================================")
-    df = modelResults.pandas().xyxy[0]
-    print(df)
-    print("================================")
     objects_in_img, bboxes, colors, confidence = img_handler.extract_detection_info(modelResults)
     print(f"detection info: {objects_in_img,bboxes,colors,confidence}")
-    modelElapsedTime = time.time() - model_start_time
     
     if save_detection_img:
         # TODO: new thread to save the detection image
@@ -112,28 +91,13 @@ def detect(img, img_counter, save_detection_img = True):
 
 # max_priority_object： 從檢測到的物體列表中返回優先級最高的物體
 def get_max_priority_object(detected_objects : list):
-    """
-    Returns the object with the highest priority from the list of detected objects.
-
-    Parameters:
-    - detected_objects (list): A list of tuples containing detected objects and their areas.
-
-    Returns:
-    - str: The object with the maximum priority.
-    """
-    def get_priority_of_object(obj, obj_size ):
-        if obj == PEDESTRIAN and (obj_size > 250):
-            return 7
-        elif obj == STOP_SIGN and obj_size > 400 :
+    def get_priority_of_object(obj, obj_size):
+        if obj == STOP_SIGN and obj_size > 400 :
             return 6
-        elif obj == CROSSWALK_SIGN and obj_size > 350 :
+        elif obj == SPEED_LIMIT_30_SIGN and obj_size > 100:
             return 5
-        elif obj == KEEP_RIGHT and obj_size > 1000:
+        elif obj == SPEED_LIMIT_120_SIGN and obj_size > 100 :
             return 4
-        elif obj == SPEED_LIMIT_50_SIGN and obj_size > 100:
-            return 3
-        elif obj == SPEED_LIMIT_100_SIGN and obj_size > 100 :
-            return 2
         else:
             return -10 #
   
@@ -161,7 +125,6 @@ def run():
         start_time = time.time()
         try:
             img = fetch_img_from_car()
-            # img_handler.save_original_img(img, img_counter, run_ind)  # 如果你需要存原圖
 
             # return 偵測的標誌
             objects_in_img = detect(img, img_counter, save_detection_img=True)
@@ -182,7 +145,6 @@ def run():
             print(f"elapsed_time = {elapsed_time:.4f}s")
 
 if __name__ == '__main__':
-    # Initialize a new directory to store images (both original and detection) for the current execution run.
     run_ind = img_handler.create_run_folder_for_images()
     print(f"Assigned run index: {run_ind}")
     img_handler.update_run_index(run_ind)

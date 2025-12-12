@@ -13,27 +13,21 @@ PORT = 80
 
 # URI設定
 FORWARD_URI = f"{CAR_ESP_32_URI}:{PORT}/forward"
-BACKWARD_URI = f"{CAR_ESP_32_URI}:{PORT}/backward"
-RIGHT_URI = f"{CAR_ESP_32_URI}:{PORT}/right" 
-LEFT_URI = f"{CAR_ESP_32_URI}:{PORT}/left"
-SET_SPEED_URI = f"{CAR_ESP_32_URI}:{PORT}/set_speed"
 CAPTURE_URI = f"{CAR_ESP_32_URI}:{PORT}/capture"
 STOP_URI = f"{CAR_ESP_32_URI}:{PORT}/stop"
 STREAM_URI = f"{CAR_ESP_32_URI}:{PORT}/stream"
+SPEED_LIMIT_30_URI = f"{CAR_ESP_32_URI}:{PORT}/speed/30"
+SPEED_LIMIT_120_URI = f"{CAR_ESP_32_URI}:{PORT}/speed/30"
 
 # 車輛速度設定
 INITIAL_SPEED = 35
-CROSSWALK_SPEED = 35
-LIMIT_100_SPEED = 65
-LIMIT_50_SPEED = 50
+LIMIT_120_SPEED = 120
+LIMIT_30_SPEED = 30
 
 # Object names
 STOP_SIGN = 'Stop'
-SPEED_LIMIT_50_SIGN = '50'
-PEDESTRIAN = 'Pedestrian'
-KEEP_RIGHT = 'KeepRight'
-CROSSWALK_SIGN = 'CrossWalk'
-SPEED_LIMIT_100_SIGN = '100'
+SPEED_LIMIT_30_SIGN = '30'
+SPEED_LIMIT_120_SIGN = '120'
 
 
 
@@ -46,17 +40,11 @@ ANSI_COLOR_RESET = '\033[0m'
 
 # List of All Objects with attributes
 ALL_OBJECTS = [     {"name" : STOP_SIGN       ,  "threshold" : 0.75   ,   "color" : (0, 0, 255) },
-                    {"name" : SPEED_LIMIT_50_SIGN  ,  "threshold" : 0.84    ,  "color" : (0, 255, 0) },
-                    {"name" : PEDESTRIAN      ,  "threshold" : 0.75    ,  "color" : (255, 0, 0) },
-                    {"name" : KEEP_RIGHT      ,  "threshold" : 0.9   ,  "color" : (255, 100, 0) },
-                    {"name" : CROSSWALK_SIGN       ,  "threshold" : 0.8    ,  "color" : (180, 100, 10) },
-                    {"name" : SPEED_LIMIT_100_SIGN ,  "threshold" : 0.83    ,  "color" : (50, 100, 60) }   ]
+                    {"name" : SPEED_LIMIT_30_SIGN  ,  "threshold" : 0.84    ,  "color" : (0, 255, 0) },
+                    {"name" : SPEED_LIMIT_120_SIGN ,  "threshold" : 0.83    ,  "color" : (50, 100, 60) }   ]
 
 # objects area in meters
-OBJECTS_AREA = {SPEED_LIMIT_50_SIGN: 0.36, 
-                SPEED_LIMIT_100_SIGN: 0.49,
-                CROSSWALK_SIGN: 0.45,
-                PEDESTRIAN: 0.30,
-                STOP_SIGN:0.33,
-                KEEP_RIGHT: 0.25
+OBJECTS_AREA = {SPEED_LIMIT_30_SIGN: 0.36, 
+                SPEED_LIMIT_120_SIGN: 0.49,
+                STOP_SIGN:0.33
                 }
