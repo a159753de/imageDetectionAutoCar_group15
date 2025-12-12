@@ -15,18 +15,14 @@
 // ─────────────────────────────
 // 車子方向常數
 // ─────────────────────────────
-#define FORWARD   1
-#define BACKWARD  2
-#define LEFT      3
-#define RIGHT     4
-#define STOP      5
-#define TURN_SPEED 55
-
-// 馬達 / LED 腳位（可以直接在其他檔案用）
-const int gpLb  = 2;
-const int gpLf  = 14;  // Left forward
-const int gpRb  = 15;  // Right forward
-const int gpRf  = 13;  // Right backward
+#define FORWARD           1
+#define BACKWARD          2
+#define LEFT              3
+#define RIGHT             4
+#define STOP              5
+#define SPEED_LIMIT_30    6
+#define SPEED_LIMIT_120   7
+#define TURN_SPEED        55
 
 // 全域車速 / 方向變數（在 server.cpp 定義）
 extern int carSpeed;

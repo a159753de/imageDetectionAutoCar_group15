@@ -1,7 +1,7 @@
 #include "server.h"
 
 // global variables
-int carSpeed = 35; 
+int carSpeed = 20; 
 int carDirection = STOP;
 
 httpd_handle_t index_httpd = NULL;
@@ -24,72 +24,48 @@ esp_err_t index_handler(httpd_req_t *req) {
     return ESP_OK;
 }
 
-//==============================
-// OV7725 影像傳輸：RAW FRAME CAPTURE
-//==============================
+//===========================
+// 單張拍照（JPEG）
+//===========================
 esp_err_t capture_handler(httpd_req_t *req) {
-    // Serial.println("capture request");
-        // 從攝影機取得一張 frame
     camera_fb_t *fb = esp_camera_fb_get();
     if (!fb) {
         httpd_resp_send_500(req);
         return ESP_FAIL;
     }
 
-    // 設定 HTTP 回應格式：原始 RGB565 buffer（二進位資料）
-    httpd_resp_set_type(req, "application/octet-stream");
-    httpd_resp_set_hdr(req, "Content-Disposition", "inline; filename=capture.raw");
+    httpd_resp_set_type(req, "image/jpeg");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
+    httpd_resp_send(req, (const char *)fb->buf, fb->len);
 
-    // 將整張 RGB565 frame 送出去
-    httpd_resp_send(req, (const char*)fb->buf, fb->len);
-
-    // 釋放 frame buffer 給 camera driver
     esp_camera_fb_return(fb);
     return ESP_OK;
 }
 
-//==============================
-// OV7725 專用：RAW STREAM（MJPEG 改成 RAW）
-//==============================
-static esp_err_t stream_handler(httpd_req_t *req){
-   esp_err_t res = ESP_OK;
-
-    res = httpd_resp_set_type(req, "multipart/x-mixed-replace; boundary=frame");
+//===========================
+// MJPEG Stream
+//===========================
+esp_err_t stream_handler(httpd_req_t *req) {
+    httpd_resp_set_type(req, "multipart/x-mixed-replace; boundary=frame");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
 
+    char buf[64];
     while (true) {
-        // 獲取一張frame
         camera_fb_t *fb = esp_camera_fb_get();
-        if (!fb){
-            httpd_resp_send_500(req);
-            return ESP_FAIL;
-        }
+        if (!fb) break;
 
-        // 傳 frame boundary
-        res = httpd_resp_send_chunk(req, "--frame\r\n", strlen("--frame\r\n"));
-        if (res != ESP_OK) break;
+        httpd_resp_send_chunk(req, "--frame\r\n", 8);
 
-        // header：RGB565 raw frame
-        char header[100];
-        int hlen = snprintf(header, sizeof(header),
-            "Content-Type: application/octet-stream\r\nContent-Length: %u\r\n\r\n",
-            fb->len);
-        res = httpd_resp_send_chunk(req, header, hlen);
-        if (res != ESP_OK) break;
-
-        // 送 frame buffer
-        res = httpd_resp_send_chunk(req, (const char*)fb->buf, fb->len);
-        if (res != ESP_OK) break;
-
-        // frame end
-        res = httpd_resp_send_chunk(req, "\r\n", 2);
+        size_t len = snprintf(buf, sizeof(buf),
+                              "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n",
+                              fb->len);
+        httpd_resp_send_chunk(req, buf, len);
+        httpd_resp_send_chunk(req, (const char *)fb->buf, fb->len);
+        httpd_resp_send_chunk(req, "\r\n", 2);
 
         esp_camera_fb_return(fb);
-        if (res != ESP_OK) break;
     }
-
-    return res;
+    return ESP_OK;
 }
 
 //======================
@@ -107,6 +83,33 @@ static esp_err_t forward_handler(httpd_req_t *req) {
   
   return ESP_OK;
 }
+
+static esp_err_t speed_limit_30_handler(httpd_req_t *req) {
+  carDirection = SPEED_LIMIT_30;
+  // Set the HTTP response headers
+  httpd_resp_set_type(req, "text/plain");
+  httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*"); // Add CORS header if needed
+
+  // Send a response message
+  const char *response_message = "Speed set to 30.";
+  httpd_resp_sendstr(req, response_message);
+  
+  return ESP_OK;
+}
+
+static esp_err_t speed_limit_120_handler(httpd_req_t *req) {
+  carDirection = SPEED_LIMIT_120;
+  // Set the HTTP response headers
+  httpd_resp_set_type(req, "text/plain");
+  httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*"); // Add CORS header if needed
+
+  // Send a response message
+  const char *response_message = "Speed set to 120.";
+  httpd_resp_sendstr(req, response_message);
+  
+  return ESP_OK;
+}
+
 
 static esp_err_t backward_handler(httpd_req_t *req) {
   carDirection = BACKWARD;
@@ -183,8 +186,10 @@ static esp_err_t set_speed_handler(httpd_req_t *req) {
     if (httpd_query_key_value(buf, "value", value, sizeof(value)) == ESP_OK) {
         int speed = atoi(value);
         if (speed >= 0 && speed <= 100) {
-            carSpeed = speed;
-            httpd_resp_sendstr(req, "speed updated");
+            carSpeed = speed * 6;
+            char msg[32];
+            snprintf(msg, sizeof(msg), "Speed updated: %d", (carSpeed/6));
+            httpd_resp_sendstr(req, msg);
             return ESP_OK;
         }
     }
@@ -280,7 +285,10 @@ static esp_err_t cmd_handler(httpd_req_t *req){
 void startCameraServer() {
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
     config.server_port = 80;
-
+    // 把上限改大 (例如改為 16)
+    config.max_uri_handlers = 16;
+    
+    Serial.println("=== SERVER CPP VERSION A LOADED ===");
     // ====== API URI 定義 ======
     httpd_uri_t index_uri = {
         .uri       = "/",
@@ -330,6 +338,18 @@ void startCameraServer() {
         .handler   = set_speed_handler,
         .user_ctx  = NULL
     };
+    httpd_uri_t speed_limit_30_uri = {
+        .uri       = "/speed/30",
+        .method    = HTTP_GET,
+        .handler   = speed_limit_30_handler,
+        .user_ctx  = NULL
+    };
+    httpd_uri_t speed_limit_120_uri = {
+        .uri       = "/speed/120",
+        .method    = HTTP_GET,
+        .handler   = speed_limit_120_handler,
+        .user_ctx  = NULL
+    };
     httpd_uri_t cmd_uri = {
         .uri       = "/control",
         .method    = HTTP_GET,
@@ -353,8 +373,11 @@ void startCameraServer() {
         httpd_register_uri_handler(index_httpd, &left_uri);
         httpd_register_uri_handler(index_httpd, &forward_uri);
         httpd_register_uri_handler(index_httpd, &backward_uri);
+        httpd_register_uri_handler(index_httpd, &speed_limit_30_uri);
+        httpd_register_uri_handler(index_httpd, &speed_limit_120_uri);
         httpd_register_uri_handler(index_httpd, &stop_uri);
         httpd_register_uri_handler(index_httpd, &cmd_uri);
+
 
         // ⭐⭐ 重點：直接把 stream 註冊在同一個 server
         httpd_register_uri_handler(index_httpd, &stream_uri);

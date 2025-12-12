@@ -1,5 +1,8 @@
 import urllib.request
 import time
+
+import cv2
+import numpy as np
 from constants import *
 import requests
 
@@ -88,21 +91,28 @@ def set_speed(speed):
     except Exception as e:
      print(f"An unexpected error occurred while setting the speed to {speed} {e}\n")
 
+
 #################
-# 影像擷取 RAW565
+# 影像擷取
 #################
 def capture_img():
     """
-    從 ESP32 的 /capture 取得一張影像 (RGB565 Raw buffer)
-    回傳: bytes（長度 = width * height * 2）
+    從 ESP32 的 /capture 取得一張 JPEG 影像
+    回傳: numpy array (BGR)
     """
     try:
-        resp = urllib.request.urlopen(CAPTURE_URI,timeout=5)
-        data = resp.read()
-        return data
+        resp = urllib.request.urlopen(CAPTURE_URI, timeout=5)
+        jpg = resp.read()
+
+        # JPEG → numpy array
+        img_array = np.frombuffer(jpg, dtype=np.uint8)
+        img = cv2.imdecode(img_array, cv2.IMREAD_COLOR)
+
+        return img
+
     except Exception as e:
         print(f"[ERROR] capture_img failed: {e}")
-        return b""
+        return None
 
 
 # 檢查esp32 server是否可用

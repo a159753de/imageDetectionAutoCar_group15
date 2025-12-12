@@ -25,26 +25,6 @@ detection_model = torch.hub.load(
 
 car_speed = INITIAL_SPEED
 
-# RAW565 → RGB888 轉換
-def raw565_to_rgb888(raw: bytes, width=160, height=120):
-    # 先確認長度
-    expected = width * height * 2
-    if len(raw) != expected:
-        raise ValueError(f"Raw data size mismatch! got {len(raw)}, expected {expected}")
-
-    # 小端序讀取 RGB565
-    # arr = np.frombuffer(raw, dtype=">u2").reshape((height, width))
-    arr = np.frombuffer(raw, dtype="<u2").byteswap().reshape((height, width))
-
-    # RGB565 breakup
-    r = ((arr >> 11) & 0x1F) << 3
-    g = ((arr >> 5) & 0x3F) << 2
-    b = (arr & 0x1F) << 3
-
-    # 組成 BGR 給 OpenCV
-    bgr = np.dstack((b, g, r)).astype(np.uint8)
-    return bgr
-
 # 定義駕駛邏輯，根據檢測到的物體調整車速和方向
 def drive(max_priority_obj,last_obj_in_image, obj_size,car_speed):
     """
@@ -79,38 +59,22 @@ def wait_for_car_server():
     
 def fetch_img_from_car():
     """
-    從車子抓一張 RAW565 影像，轉成 BGR 圖片
+    從 ESP32-CAM 抓一張 JPEG → BGR 圖片
     """
-    fetch_start_time = time.time()
-
     try:
-        # 1. 從車抓 raw bytes
-        capture_start_time = time.time()
-        img_data = car.capture_img()   # 已經是 bytes，不用再 .read()
-        capture_time = time.time() - capture_start_time
-        print(f"{ANSI_COLOR_GREEN}Time to capture image: {capture_time:.4f} seconds{ANSI_COLOR_RESET}")
-
-        if not img_data:
-            raise RuntimeError("Empty image data from car")
-
-        print(f"{ANSI_COLOR_GREEN}data size: {len(img_data)} bytes {ANSI_COLOR_RESET}")
-
-        # 2. RAW565 → BGR 圖片
-        decode_start = time.time()
-        img = raw565_to_rgb888(img_data, width=320, height=240)
-        decode_time = time.time() - decode_start
-        print(f"{ANSI_COLOR_GREEN}Time to decode RAW565: {decode_time:.4f} seconds{ANSI_COLOR_RESET}")
-
-        # 3. 如果你真的需要旋轉再打開（先關掉比較容易 debug）
-        # img = cv.rotate(img, cv.ROTATE_90_CLOCKWISE)
-
-        total_time = time.time() - fetch_start_time
-        print(f"\n{ANSI_COLOR_GREEN}Total time for image fetching and processing: {total_time:.4f} seconds{ANSI_COLOR_RESET}\n")
-
+        img = car.capture_img()   # 已是 BGR
+        if img is None:
+            raise RuntimeError("Failed to decode JPEG from ESP32-CAM")
+        
+        # === 修正圖片方向 ===
+        img = cv.flip(img, 0)     # 上下翻轉
+        img = cv.flip(img, 1)     # 左右翻轉
+        
         return img
 
     except Exception as e:
-        raise Exception(f"{ANSI_COLOR_RED}Error fetching or processing image: {e}{ANSI_COLOR_RESET}")
+        raise Exception(f"Error fetching image: {e}")
+
 
 def prepare_for_yolo(img):
     # img: BGR uint8
@@ -126,14 +90,17 @@ def detect(img, img_counter, save_detection_img = True):
     img = img_handler.roi(img)
     
     # === 前處理 ===
-    # input_tensor = prepare_for_yolo(img)
     rgb_img = cv.cvtColor(img, cv.COLOR_BGR2RGB)
-    # input_tensor = torch.from_numpy(rgb_img).permute(2,0,1).float().unsqueeze(0)
-    # Run the object detection model
     model_start_time = time.time()
-    modelResults = detection_model(rgb_img) 
+    modelResults = detection_model(rgb_img) # 這裡給出YOLO判斷結果
+    print(f"model results: {modelResults}")
+    
+    print("================================")
+    df = modelResults.pandas().xyxy[0]
+    print(df)
+    print("================================")
     objects_in_img, bboxes, colors, confidence = img_handler.extract_detection_info(modelResults)
-    # print(f"detection info: {objects_in_img,bboxes,colors,confidence}")
+    print(f"detection info: {objects_in_img,bboxes,colors,confidence}")
     modelElapsedTime = time.time() - model_start_time
     
     if save_detection_img:
@@ -196,6 +163,7 @@ def run():
             img = fetch_img_from_car()
             # img_handler.save_original_img(img, img_counter, run_ind)  # 如果你需要存原圖
 
+            # return 偵測的標誌
             objects_in_img = detect(img, img_counter, save_detection_img=True)
             max_priority_obj, obj_size = get_max_priority_object(objects_in_img)
 
@@ -220,6 +188,3 @@ if __name__ == '__main__':
     img_handler.update_run_index(run_ind)
 
     run()
-
-
-    
