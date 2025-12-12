@@ -14,10 +14,7 @@
 const char* ssid = "HCILab_2.4G";
 const char* password = "hcilab@307";
 
-// 改成 OV2640 / ESP32-CAM 風格的腳位
-// ★ 這裡請依你的實際接線修改 ★
-// 以下只是範例（假設類似 ESP32-CAM / ESP32-S3-EYE）
-// =====================
+// OV2640 / ESP32-CAM 腳位
 #define CAMERA_MODEL_AI_THINKER
 #if defined(CAMERA_MODEL_AI_THINKER)
   #define PWDN_GPIO_NUM     32
@@ -42,7 +39,6 @@ const char* password = "hcilab@307";
 #define PIN_IN1   2   // 左馬達方向 1
 #define PIN_IN2  14   // 左馬達方向 2
 #define PIN_ENA  4   // 左馬達 PWM
-
 #define PIN_IN3  15   // 右馬達方向 1
 #define PIN_IN4  12   // 右馬達方向 2
 #define PIN_ENB  13    // 右馬達 PWM
@@ -94,11 +90,11 @@ void setup() {
   config.pin_reset      = RESET_GPIO_NUM;
 
   config.xclk_freq_hz = 20000000;
-  config.pixel_format = PIXFORMAT_JPEG;   // ★ 改成 JPEG
+  config.pixel_format = PIXFORMAT_JPEG; 
 
   if (psramFound()) {
     config.frame_size   = FRAMESIZE_VGA;  // 640x480
-    config.jpeg_quality = 12;             // 0-63，數字越小畫質越好
+    config.jpeg_quality = 12;             
     config.fb_count     = 2;
   } else {
     config.frame_size   = FRAMESIZE_QVGA; // 320x240
@@ -113,7 +109,6 @@ void setup() {
     return;
   }
 
-  // ⭐⭐ 在這裡加入，位置要正確 ⭐⭐
   sensor_t * s = esp_camera_sensor_get();
   s->set_hmirror(s, 1);
 
@@ -150,7 +145,6 @@ const int cycle = 10;
 void loop() {
   int parton = cycle * carSpeed/100;
   int lastSpeed = 0;
-  // Serial.println("speed = " + String(carSpeed) + " direction is " + String(carDirection));
   switch (carDirection) {
     case FORWARD:
       WheelAct(HIGH , LOW , 209, HIGH, LOW, 185);

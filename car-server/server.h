@@ -16,13 +16,9 @@
 // 車子方向常數
 // ─────────────────────────────
 #define FORWARD           1
-#define BACKWARD          2
-#define LEFT              3
-#define RIGHT             4
-#define STOP              5
-#define SPEED_LIMIT_30    6
-#define SPEED_LIMIT_120   7
-#define TURN_SPEED        55
+#define STOP              2
+#define SPEED_LIMIT_30    3
+#define SPEED_LIMIT_120   4
 
 // 全域車速 / 方向變數（在 server.cpp 定義）
 extern int carSpeed;

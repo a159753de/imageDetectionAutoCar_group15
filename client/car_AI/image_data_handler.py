@@ -50,43 +50,6 @@ def save_detection_img(img, obj_in_img : list, bboxes : list, colors : list, con
     cv2.imwrite(output_detection_path, img)
     return img
 
-# def extract_detection_info(results):
-#     """
-#     Extract and filter detection data from results.
-
-#     Parameters:
-#     - results: Detection results, typically from a YOLO-based detector.
-
-#     Returns:
-#     - classesList (list): Detected object names and areas.
-#     - bboxesList (list): Bounding boxes [x_min, y_min, x_max, y_max].
-#     - colorsList (list): Colors for each detected object.
-#     - confidenceList (list): Confidence scores for detections.
-#     """
-#     df = results.pandas().xyxy[0] 
-
-#     bboxesList = []
-#     classesList = []
-#     colorsList = []
-#     confidenceList = []
-
-#     # Iterate over each detection in the dataframe
-#     for _, row in df.iterrows():
-#         obj_index = int(row['class'])
-#         obj_name = constants.ALL_OBJECTS[obj_index]["name"]
-#         # Filter detections based on a predefined threshold
-#         if row['confidence'] > constants.ALL_OBJECTS[obj_index]["threshold"]:
-#             bboxesList.append([int(row['xmin']), int(row['ymin']),
-#                                 int(row['xmax']), int(row['ymax'])])
-            
-#             area = (int(row['xmax']) - int(row['xmin'])) * (int(row['ymax']) -  int(row['ymin']))
-#             # classesList.append(obj_name)
-#             classesList.append((obj_name,area))
-#             colorsList.append(constants.ALL_OBJECTS[obj_index]["color"])
-#             confidenceList.append(row['confidence'])
-            
-#     return classesList, bboxesList, colorsList, confidenceList
-
 def extract_detection_info(results):
     """
     Extract and filter detection data from YOLOv5 results.
