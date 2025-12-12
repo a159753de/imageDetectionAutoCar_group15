@@ -50,41 +50,73 @@ def save_detection_img(img, obj_in_img : list, bboxes : list, colors : list, con
     cv2.imwrite(output_detection_path, img)
     return img
 
+# def extract_detection_info(results):
+#     """
+#     Extract and filter detection data from results.
+
+#     Parameters:
+#     - results: Detection results, typically from a YOLO-based detector.
+
+#     Returns:
+#     - classesList (list): Detected object names and areas.
+#     - bboxesList (list): Bounding boxes [x_min, y_min, x_max, y_max].
+#     - colorsList (list): Colors for each detected object.
+#     - confidenceList (list): Confidence scores for detections.
+#     """
+#     df = results.pandas().xyxy[0] 
+
+#     bboxesList = []
+#     classesList = []
+#     colorsList = []
+#     confidenceList = []
+
+#     # Iterate over each detection in the dataframe
+#     for _, row in df.iterrows():
+#         obj_index = int(row['class'])
+#         obj_name = constants.ALL_OBJECTS[obj_index]["name"]
+#         # Filter detections based on a predefined threshold
+#         if row['confidence'] > constants.ALL_OBJECTS[obj_index]["threshold"]:
+#             bboxesList.append([int(row['xmin']), int(row['ymin']),
+#                                 int(row['xmax']), int(row['ymax'])])
+            
+#             area = (int(row['xmax']) - int(row['xmin'])) * (int(row['ymax']) -  int(row['ymin']))
+#             # classesList.append(obj_name)
+#             classesList.append((obj_name,area))
+#             colorsList.append(constants.ALL_OBJECTS[obj_index]["color"])
+#             confidenceList.append(row['confidence'])
+            
+#     return classesList, bboxesList, colorsList, confidenceList
+
 def extract_detection_info(results):
     """
-    Extract and filter detection data from results.
-
-    Parameters:
-    - results: Detection results, typically from a YOLO-based detector.
-
-    Returns:
-    - classesList (list): Detected object names and areas.
-    - bboxesList (list): Bounding boxes [x_min, y_min, x_max, y_max].
-    - colorsList (list): Colors for each detected object.
-    - confidenceList (list): Confidence scores for detections.
+    Extract and filter detection data from YOLOv5 results.
     """
-    df = results.pandas().xyxy[0] 
+
+    df = results.pandas().xyxy[0]  
 
     bboxesList = []
     classesList = []
     colorsList = []
     confidenceList = []
 
-    # Iterate over each detection in the dataframe
     for _, row in df.iterrows():
-        obj_index = int(row['class'])
-        obj_name = constants.ALL_OBJECTS[obj_index]["name"]
-        # Filter detections based on a predefined threshold
-        if row['confidence'] > constants.ALL_OBJECTS[obj_index]["threshold"]:
-            bboxesList.append([int(row['xmin']), int(row['ymin']),
-                                int(row['xmax']), int(row['ymax'])])
-            
-            area = (int(row['xmax']) - int(row['xmin'])) * (int(row['ymax']) -  int(row['ymin']))
-            # classesList.append(obj_name)
-            classesList.append((obj_name,area))
-            colorsList.append(constants.ALL_OBJECTS[obj_index]["color"])
-            confidenceList.append(row['confidence'])
-            
+        xmin = int(row["xmin"])
+        ymin = int(row["ymin"])
+        xmax = int(row["xmax"])
+        ymax = int(row["ymax"])
+
+        name = row["name"]
+        confidence = float(row["confidence"])
+
+        area = (xmax - xmin) * (ymax - ymin)
+
+        bboxesList.append([xmin, ymin, xmax, ymax])
+        classesList.append((name, area))
+        confidenceList.append(confidence)
+
+        # default color
+        colorsList.append((0, 255, 0))
+
     return classesList, bboxesList, colorsList, confidenceList
 
 def save_original_and_detection_img(img ,  classesInImg : list, bboxes : list, colors : list, confidence : list,imgCounter, currClientRunIndex): 
@@ -149,14 +181,3 @@ def create_run_folder_for_images():
 def update_run_index(run_index):
     with open(constants.RUN_INDEX_PATH_FILE, 'w') as file:
         file.write(str(run_index))
-
-# RAW565 → RGB888 轉換
-# def raw565_to_rgb888(raw, width=320, height=240):
-#     arr = np.frombuffer(raw, dtype=np.uint16).reshape(height, width)
-
-#     r = ((arr >> 11) & 0x1F) << 3
-#     g = ((arr >> 5) & 0x3F) << 2
-#     b = (arr & 0x1F) << 3
-
-#     rgb = np.stack([b, g, r], axis=-1).astype(np.uint8)
-#     return rgb

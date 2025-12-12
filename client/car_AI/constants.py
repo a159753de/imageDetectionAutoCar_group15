@@ -8,7 +8,7 @@ TEST_IMAGES_PATH = os.path.join(os.getcwd(), "data", "test", "images")
 TEST_LABELS_PATH = os.path.join(os.getcwd(), "data", "test", "labels")
 
 # Car control URIs
-CAR_ESP_32_URI = "http://192.168.0.109"
+CAR_ESP_32_URI = "http://192.168.0.114"
 PORT = 80
 
 # URI設定
