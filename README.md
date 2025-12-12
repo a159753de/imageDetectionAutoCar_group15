@@ -3,7 +3,7 @@
 # 系統運行
 1. 先在專案資料夾建立python虛擬環境venv
 ```
-py -3.10 -m venv venv
+py -3.10 -m venv {venv名字}
 ```
 2. 啟動venv
 ```
@@ -49,29 +49,17 @@ py .\client\car_AI\ai_driver.py
 
 * loop()：
 
-  看 carDirection / carSpeed 控制馬達
-
-  從電腦 / 筆電端：
-
-    抓單張圖：http://<ESP32_IP>/capture → RAW RGB565
-
-    串流：http://<ESP32_IP>/stream → multipart raw
+  看 carDirection 控制馬達
 
 * 控車：
   
     /forward
 
-    /backward
-
-    /left
-
-    /right
-
     /stop
 
-* 設定速度：/set_speed?value=50
+    /speed/30
 
-* 調相機參數：/control?var=brightness&val=1
+    /speed/120
 
 ## client
 ### car_AI
@@ -86,11 +74,9 @@ ai_driver.py — 主流程（Main Loop）
 
   控制迴圈：抓圖 → 偵測 → 決策 → 控制車
 
-  呼叫 remote_control.py 去控制 ESP32S3
+  remote_control.py 發送 HTTP
 
   呼叫 image_data_handler.py 處理 ROI / 畫框等
-
-  呼叫 obj_handlers.py 決定遇到路牌的行為
 
   呼叫模型 detect()
 
@@ -103,9 +89,9 @@ remote_control.py — 車子控制（HTTP API）
 
 * 用途：
 
-  封裝 ESP32S3 API（forward / backward / stop / capture / set_speed）
+  控制 ESP32-CAM API（forward / stop / capture / speed）
 
-  使用 urllib or requests 呼叫你的 /forward /capture /stop 等 URI
+  使用 urllib or requests 呼叫 URI
 
   透過 CAPTURE_URI 取得影像
 
@@ -120,29 +106,14 @@ image_data_handler.py — 圖像處理
 
   儲存圖片
 
-obj_handlers.py — 路牌行為邏輯
----
-
-* 用途：
-
-  停止、減速、變速、轉彎的邏輯
-
-  呼叫 remote_control.py 內的控制函式
 
 constants.py — 存放 URI 與常用常數
 ---
 
 * 用途：
 
-  定義 CAR_ESP_32_URI、FORWARD_URI、CAPTURE_URI 等全部硬連 URI
+  定義 CAR_ESP_32_URI、FORWARD_URI、CAPTURE_URI 等 URI
 
   供 remote_control.py / ai_driver.py 使用
 
 ### web_app動web server，可實時觀看偵測結果
-
-# TODO
-1. 車子可以行動 ✔️
-2. 相機可以運作 ✔️
-3. 調整相機顏色
-4. YOLOv5 成功判斷
-5. 車輛根據判斷結果進行運動
