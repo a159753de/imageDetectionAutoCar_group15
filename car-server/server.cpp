@@ -8,13 +8,13 @@ httpd_handle_t index_httpd = NULL;
 httpd_handle_t stream_httpd = NULL;
 
 //===========================
-// 基本首頁
+// 首頁
 //===========================
 esp_err_t index_handler(httpd_req_t *req) {
     // Content to be displayed at the root URL
     const char *html_response = "<html><body><h1>Welcome to My ESP Web Server</h1></body></html>";
     
-    // Set the HTTP response headers
+    // 設定 HTTP Headers
     httpd_resp_set_type(req, "text/html");
     httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*"); // Add CORS header if needed
     
@@ -86,7 +86,7 @@ static esp_err_t forward_handler(httpd_req_t *req) {
 
 static esp_err_t speed_limit_30_handler(httpd_req_t *req) {
   carDirection = SPEED_LIMIT_30;
-  // Set the HTTP response headers
+  // 設定 HTTP Headers
   httpd_resp_set_type(req, "text/plain");
   httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*"); // Add CORS header if needed
 
@@ -99,7 +99,7 @@ static esp_err_t speed_limit_30_handler(httpd_req_t *req) {
 
 static esp_err_t speed_limit_120_handler(httpd_req_t *req) {
   carDirection = SPEED_LIMIT_120;
-  // Set the HTTP response headers
+  // 設定 HTTP Headers
   httpd_resp_set_type(req, "text/plain");
   httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*"); // Add CORS header if needed
 
@@ -112,9 +112,9 @@ static esp_err_t speed_limit_120_handler(httpd_req_t *req) {
 
 static esp_err_t stop_handler(httpd_req_t *req) {
   carDirection = STOP;
-  // Set the HTTP response headers
+  // 設定 HTTP Headers
   httpd_resp_set_type(req, "text/plain");
-  httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*"); // Add CORS header if needed
+  httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
 
   // Send a response message
   const char *response_message = "Car stopped successfully";
@@ -132,18 +132,11 @@ void startCameraServer() {
     // 把上限改大
     config.max_uri_handlers = 16;
     
-    Serial.println("=== SERVER CPP VERSION A LOADED ===");
     // ====== API URI 定義 ======
     httpd_uri_t index_uri = {
         .uri       = "/",
         .method    = HTTP_GET,
         .handler   = index_handler,
-        .user_ctx  = NULL
-    };
-    httpd_uri_t capture_uri = {
-        .uri       = "/capture",
-        .method    = HTTP_GET,
-        .handler   = capture_handler,
         .user_ctx  = NULL
     };
     httpd_uri_t forward_uri = {
@@ -176,19 +169,22 @@ void startCameraServer() {
         .handler   = stream_handler,
         .user_ctx  = NULL
     };
+    httpd_uri_t capture_uri = {
+        .uri       = "/capture",
+        .method    = HTTP_GET,
+        .handler   = capture_handler,
+        .user_ctx  = NULL
+    };
 
     // ====== 啟動 Web Server ======
     if (httpd_start(&index_httpd, &config) == ESP_OK) {
 
         httpd_register_uri_handler(index_httpd, &index_uri);
-        httpd_register_uri_handler(index_httpd, &capture_uri);
         httpd_register_uri_handler(index_httpd, &forward_uri);
         httpd_register_uri_handler(index_httpd, &speed_limit_30_uri);
         httpd_register_uri_handler(index_httpd, &speed_limit_120_uri);
         httpd_register_uri_handler(index_httpd, &stop_uri);
-
-
-        // ⭐⭐ 重點：直接把 stream 註冊在同一個 server
+        httpd_register_uri_handler(index_httpd, &capture_uri);
         httpd_register_uri_handler(index_httpd, &stream_uri);
 
         Serial.printf("HTTP server started on port 80\n");
