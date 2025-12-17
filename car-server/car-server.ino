@@ -1,4 +1,4 @@
-#include "server.h"
+#include "server.h"a
 
 #include "esp_camera.h"
 #include <WiFi.h>
@@ -11,10 +11,10 @@
 #include "esp_http_server.h"
 
 // WIFI setting
-const char* ssid = "HCILab_2.4G";
-const char* password = "hcilab@307";
+const char* ssid = "WIFI_ID";
+const char* password = "WIFI_PASSWORD";
 
-// OV2640 / ESP32-CAM 腳位
+// OV3660 / ESP32-CAM 腳位
 #define CAMERA_MODEL_AI_THINKER
 #if defined(CAMERA_MODEL_AI_THINKER)
   #define PWDN_GPIO_NUM     32
@@ -45,8 +45,6 @@ const char* password = "hcilab@307";
 
 
 void setup() {
-  WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
- 
   Serial.begin(115200);
   Serial.setDebugOutput(false);
   pinMode(PIN_IN1, OUTPUT);
@@ -63,7 +61,7 @@ void setup() {
   digitalWrite(PIN_IN4, LOW);
 
   // =======================
-  // OV2640 / ESP32-CAM 參數
+  // OV3660 / ESP32-CAM 參數
   // =======================
   camera_config_t config;
   memset(&config, 0, sizeof(config));
@@ -138,7 +136,6 @@ void WheelAct(int IN1, int IN2, int ENA, int IN3, int IN4, int ENB){
   digitalWrite(PIN_IN4, IN4);
   analogWrite(PIN_ENB, ENB);
 }
-
 
 const int cycle = 10;
 

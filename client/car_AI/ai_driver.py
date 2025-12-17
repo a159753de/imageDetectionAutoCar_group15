@@ -81,12 +81,6 @@ def detect(img, img_counter, save_detection_img = True):
     
     objects_in_img, bboxes, colors, confidence = img_handler.extract_detection_info(modelResults)
     print(f"detection info: {objects_in_img,bboxes,colors,confidence}")
-    
-    if save_detection_img:
-        # TODO: new thread to save the detection image
-        img_handler.save_detection_img(img,objects_in_img, bboxes, colors, confidence, img_counter, run_ind)
-    
-    # img_handler.print_results(objects_in_img, confidence, modelElapsedTime)
     return objects_in_img
 
 # max_priority_object： 從檢測到的物體列表中返回優先級最高的物體
@@ -128,8 +122,9 @@ def run():
 
             # return 偵測的標誌
             objects_in_img = detect(img, img_counter, save_detection_img=True)
+            # 設定標誌的優先順序並取得最高優先標誌
             max_priority_obj, obj_size = get_max_priority_object(objects_in_img)
-
+            # 根據最高優先標誌調整車速
             car_speed = drive(max_priority_obj, last_obj_in_image, obj_size, car_speed)
 
             if max_priority_obj is not None:
