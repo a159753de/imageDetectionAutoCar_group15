@@ -1,5 +1,5 @@
 # 硬體設備
-1. ESP32-CAM + OV2640
+1. ESP32-CAM + OV3660
 2. L298N
 # 系統需求
 1. python3.10(超過無法使用YOLOv5)
